@@ -27,7 +27,7 @@ function PPA:ShowGrid()
   PPA:Debug(2, "Show grid called")
   if not PPA.grid then
     PPA:Debug(1, "Creating the grid")
-    PPA.grid = PPA:FineGrid(12, 12)
+    PPA.grid = PPA:FineGrid(12, 12) -- fix is in MoLib v7.00.01
   end
   PPA.grid:Show()
   PPA.gridShown = true
