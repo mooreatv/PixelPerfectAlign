@@ -13,3 +13,4 @@ If you find a case where the crosses aren't showing evenly or not exactly 1 pixe
 
 (1.0 doesn't handle resize events so if you change your resolution or WoW window size, please /reload first, for now)
 
+Most of the heavy lifting code is in https://github.com/mooreatv/MoLib a reusable libray
