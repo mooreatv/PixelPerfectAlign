@@ -144,7 +144,7 @@ function PPA.Slash(arg) -- can't be a : because used directly as slash command
   if cmd == "s" then
     -- show
     PPA:ShowGrid()
-  elseif cmd == "s" then
+  elseif cmd == "h" then
     PPA:HideGrid()
   elseif cmd == "t" then
     PPA:ToggleGrid()
