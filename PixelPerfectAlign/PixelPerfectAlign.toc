@@ -1,0 +1,12 @@
+## Interface: 80200
+## Title: Pixel Perfect Align
+## Notes: Demonstrates Pixel Perfect drawing from MoLib
+## Author: MooreaTV moorea@ymail.com
+## Version: @project-version@
+## DefaultState: Enabled
+## LoadOnDemand: 0
+## SavedVariables: pixelPerfectAlignSaved
+## Globe: check-classic
+MoLib/MoLib.lua
+MoLib/MoLibUI.lua
+PPA.lua
