@@ -5,7 +5,7 @@ Demonstrates how to draw on screen lines of exactly 1 pixel width/height using a
 
 Can be used for alignment of your UI or before pretty screenshot or just to see exactly 1 pixel grid/crosses rendered.
 
-Use `/ppa` to see commands or `/ppa conf` for config options, `/ppa toggle` to toggle grid on/off, `/ppa info` for display info .
+Use `/ppa` to see commands or `/ppa conf` for config options, `/ppa toggle` to toggle grid on/off, `/ppa info` for display info.
 
 There is also an optional keybinding for toggling the grid on/off
 
