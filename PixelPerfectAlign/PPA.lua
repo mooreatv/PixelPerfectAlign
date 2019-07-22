@@ -94,10 +94,12 @@ PPA.EventHdlrs = {
   end,
 
   DISPLAY_SIZE_CHANGED = function(_self)
+    -- Always wipe (fast the 2nd time) so when showing again next it's built correctly.
+    PPA.grid = PPA:WipeFrame(PPA.grid)
     if PPA.gridShown then
       PPA:Debug("Grid is shown and we are resizing so re-drawing the grid")
-      PPA.grid = PPA:WipeFrame(PPA.grid)
-      PPA:ShowGrid()
+    -- TODO consider buffering as there is often 2+ events, or checking for actual change
+    PPA:ShowGrid()
     end
   end,
 
@@ -333,8 +335,8 @@ function PPA:CreateOptionsPanel()
     changes = changes + PPA:SetSaved("numY", numYSlider:GetValue())
     if changes > 0 then
       PPA:PrintDefault("PPA: % change(s) made to grid config", changes)
+      PPA.grid = PPA:WipeFrame(PPA.grid) -- be ready for next show
       if PPA.gridShown then
-        PPA.grid = PPA:WipeFrame(PPA.grid)
         PPA:ShowGrid()
       end
     end
