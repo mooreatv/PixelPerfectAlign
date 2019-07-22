@@ -21,13 +21,18 @@ local PPA = _G[addon]
 PPA.L = PPA:GetLocalization()
 local L = PPA.L
 
+PPA.showSplash = 3 -- how long to show splash at start
+PPA.startWithGridOn = false -- start with grid showing?
+
 -- PPA.debug = 9 -- to debug before saved variables are loaded
 
 function PPA:ShowGrid()
   PPA:Debug(2, "Show grid called")
   if not PPA.grid then
     PPA:Debug(1, "Creating the grid")
-    PPA.grid = PPA:FineGrid(12, 12) -- fix is in MoLib v7.00.01
+    local nX = 16
+    local nY = PPA:AspectRatio(nX)
+    PPA.grid = PPA:FineGrid(nX, nY)
   end
   PPA.grid:Show()
   PPA.gridShown = true
@@ -56,7 +61,7 @@ function PPA:ShowDisplayInfo(seconds)
     PPA:ShowGrid()
   end
   PPA:WipeFrame(PPA.displayInfo)
-  PPA.displayInfo = PPA:DisplayInfo(-100, -100, 2)
+  PPA.displayInfo = PPA:DisplayInfo(-130, -210, 1.5)
   C_Timer.After(seconds, function()
     if showAndHideGrid then
       PPA:HideGrid()
@@ -70,14 +75,24 @@ PPA.EventHdlrs = {
   PLAYER_ENTERING_WORLD = function(_self, ...)
     PPA:Debug("OnPlayerEnteringWorld " .. PPA:Dump(...))
     PPA:CreateOptionsPanel()
+    if PPA.startWithGridOn then
+      PPA:ShowGrid()
+    end
+    if PPA.showSplash > 0 then
+      PPA:ShowDisplayInfo(PPA.showSplash)
+    end
   end,
 
   UPDATE_BINDINGS = function(_self, ...)
     PPA:DebugEvCall(1, ...)
   end,
 
-  DISPLAY_SIZE_CHANGED = function(_self, ...)
-    PPA:DebugEvCall(1, ...)
+  DISPLAY_SIZE_CHANGED = function(_self)
+    if PPA.gridShown then
+      PPA:Debug("Grid is shown and we are resizing so re-drawing the grid")
+      PPA.grid = PPA:WipeFrame(PPA.grid)
+      PPA:ShowGrid()
+    end
   end,
 
   UI_SCALE_CHANGED = function(_self, ...)
@@ -149,7 +164,9 @@ function PPA.Slash(arg) -- can't be a : because used directly as slash command
   elseif cmd == "t" then
     PPA:ToggleGrid()
   elseif cmd == "i" then
-    PPA:ShowDisplayInfo(5)
+    local sec = 8
+    PPA:PrintDefault("PixelPerfectAlign showing display (debug) info for % seconds", sec)
+    PPA:ShowDisplayInfo(sec)
   elseif cmd == "v" then
     -- version
     PPA:PrintDefault("PixelPerfectAlign " .. PPA.manifestVersion ..
@@ -229,13 +246,19 @@ function PPA:CreateOptionsPanel()
   p:addText(L["These options let you control the behavior of PixelPerfectAlign"] .. " " .. PPA.manifestVersion ..
               " @project-abbreviated-hash@"):Place()
 
+  local startWithGrid = p:addCheckBox("Show Grid from start", "Whether we should start with the Grid shown")
+                          :Place(4, 12)
+
+  local showSplash = p:addSlider(L["Show Info at login"],
+                                 L["How long if at all to show the grid and information at login"], 0, 9, 3, "Off",
+                                 L["9 seconds"], {[3] = "3 s", [6] = "6 s", [9] = "9 s"}):Place(8, 24)
+
   p:addButton(L["Toggle Grid"],
               L["Toggles the grid between shown and hidden"] .. "\n|cFF99E5FF/ppa toggle|r " .. L["or Key Binding"],
-              "toggle"):Place()
+              "toggle"):Place(4, 20)
 
-  p:addButton(L["Display Info"],
-              L["Displays screen/resolution information for a few seconds"] .. "\n|cFF99E5FF/ppa info|r", "info")
-    :Place()
+  p:addButton(L["Display Info"], L["Displays screen/resolution information for a few seconds"] ..
+                "\n|cFF99E5FF/ppa info|r " .. L["or Key Binding"], "info"):PlaceRight()
 
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 20)
 
@@ -267,6 +290,9 @@ function PPA:CreateOptionsPanel()
   function p:HandleRefresh()
     p:Init()
     debugLevel:SetValue(PPA.debug or 0)
+    showSplash:SetValue(PPA.showSplash)
+    startWithGrid:SetChecked(PPA.startWithGridOn)
+    p.oldStart = PPA.startWithGridOn
   end
 
   function p:HandleOk()
@@ -283,6 +309,16 @@ function PPA:CreateOptionsPanel()
       end
     end
     PPA:SetSaved("debug", sliderVal)
+    PPA:SetSaved("showSplash", showSplash:GetValue())
+    PPA:SetSaved("startWithGridOn", startWithGrid:GetChecked())
+    if p.oldStart ~= PPA.startWithGridOn then
+      PPA:PrintDefault("PPA: Changed start with grid to " .. (PPA.startWithGridOn and "ON" or "OFF"))
+      if PPA.startWithGridOn then
+        PPA:ShowGrid()
+      else
+        PPA:HideGrid()
+      end
+    end
   end
 
   function p:cancel()
@@ -307,7 +343,8 @@ end
 
 -- bindings / localization
 _G.BINDING_HEADER_PPA = L["Pixel Perfect Align addon key bindings"]
-_G.BINDING_NAME_PPA_TOGGLE = L["Toggle grid"] .. " |cFF99E5FF/ppa toggle|r"
+_G.BINDING_NAME_PPA_TOGGLE = L["Toggle Grid"] .. " |cFF99E5FF/ppa toggle|r"
+_G.BINDING_NAME_PPA_INFO = L["Show Display Info"] .. " |cFF99E5FF/ppa info|r"
 
 -- PPA.debug = 2
 PPA:Debug("ppa main file loaded")

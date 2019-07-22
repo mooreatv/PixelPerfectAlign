@@ -9,4 +9,7 @@
     <Binding name="PPA_TOGGLE" header="PPA">
         PixelPerfectAlign.Slash("toggle")
     </Binding>
+    <Binding name="PPA_INFO">
+        PixelPerfectAlign.Slash("info")
+    </Binding>
 </Bindings>

@@ -1,6 +1,6 @@
 ## Interface: 80200
 ## Title: Pixel Perfect Align
-## Notes: Demonstrates Pixel Perfect drawing from MoLib
+## Notes: Demonstrates Pixel Perfect drawing from MoLib and a grid (|cFF99E5FF/ppa|r)
 ## Author: MooreaTV moorea@ymail.com
 ## Version: @project-version@
 ## DefaultState: Enabled
