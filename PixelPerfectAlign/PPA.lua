@@ -23,6 +23,9 @@ local L = PPA.L
 
 PPA.showSplash = 3 -- how long to show splash at start
 PPA.startWithGridOn = false -- start with grid showing?
+PPA.lineLength = 16
+PPA.numX = 16 -- 0 is auto is 16 / aspect ratio
+PPA.numY = 0 -- 0 is auto / aspect ratio
 
 -- PPA.debug = 9 -- to debug before saved variables are loaded
 
@@ -30,9 +33,12 @@ function PPA:ShowGrid()
   PPA:Debug(2, "Show grid called")
   if not PPA.grid then
     PPA:Debug(1, "Creating the grid")
-    local nX = 16
-    local nY = PPA:AspectRatio(nX)
-    PPA.grid = PPA:FineGrid(nX, nY)
+    local nX = PPA.numX
+    local nY = PPA.numY
+    if nY == 0 then
+      nY = PPA:AspectRatio(nX)
+    end
+    PPA.grid = PPA:FineGrid(nX, nY, PPA.lineLength)
   end
   PPA.grid:Show()
   PPA.gridShown = true
@@ -138,10 +144,19 @@ function PPA:Help(msg)
                      "/ppa version -- shows addon version")
 end
 
+-- returns 1 if changed, 0 if same as live value
+-- number instead of boolean so we can add them in handleOk
+-- (saved var isn't checked/always set)
 function PPA:SetSaved(name, value)
+  local changed = (value ~= self[name])
   self[name] = value
   pixelPerfectAlignSaved[name] = value
-  PPA:Debug(5, "(Saved) Setting % set to % - pixelPerfectAlignSaved=%", name, value, pixelPerfectAlignSaved)
+  PPA:Debug(8, "(Saved) Setting % set to % - pixelPerfectAlignSaved=%", name, value, pixelPerfectAlignSaved)
+  if changed then
+    return 1
+  else
+    return 0
+  end
 end
 
 function PPA.Slash(arg) -- can't be a : because used directly as slash command
@@ -246,12 +261,24 @@ function PPA:CreateOptionsPanel()
   p:addText(L["These options let you control the behavior of PixelPerfectAlign"] .. " " .. PPA.manifestVersion ..
               " @project-abbreviated-hash@"):Place()
 
-  local startWithGrid = p:addCheckBox("Show Grid from start", "Whether we should start with the Grid shown")
+  local startWithGrid = p:addCheckBox(L["Show Grid from start"], L["Whether we should start with the Grid shown"])
                           :Place(4, 12)
 
   local showSplash = p:addSlider(L["Show Info at login"],
-                                 L["How long if at all to show the grid and information at login"], 0, 9, 3, "Off",
+                                 L["How long if at all to show the grid and information at login"], 0, 9, 3, L["Off"],
                                  L["9 seconds"], {[3] = "3 s", [6] = "6 s", [9] = "9 s"}):Place(8, 24)
+
+  local lineLengthSlider = p:addSlider(L["Grid line length"], L["How many pixels for the lines/crosses drawn"], 1, 128,
+                                       1):Place(8, 24)
+
+  -- seems we can't put more than ~16k textures in our frame so not more than 
+  local numXSlider = p:addSlider(L["Horizontal grid intervals"], L["How many intervals horizontally."], 2, 92, 1):Place(
+                       8, 24)
+
+  local numYSlider = p:addSlider(L["Vertical grid intervals"],
+                                 L["How many intervals vertically.\nWill be based on aspect ratio when set to Auto"], 0,
+                                 84, 1, L["Auto"])
+  numYSlider:Place(8, 24)
 
   p:addButton(L["Toggle Grid"],
               L["Toggles the grid between shown and hidden"] .. "\n|cFF99E5FF/ppa toggle|r " .. L["or Key Binding"],
@@ -292,11 +319,25 @@ function PPA:CreateOptionsPanel()
     debugLevel:SetValue(PPA.debug or 0)
     showSplash:SetValue(PPA.showSplash)
     startWithGrid:SetChecked(PPA.startWithGridOn)
+    lineLengthSlider:SetValue(PPA.lineLength)
+    numXSlider:SetValue(PPA.numX)
+    numYSlider:SetValue(PPA.numY)
     p.oldStart = PPA.startWithGridOn
   end
 
   function p:HandleOk()
     PPA:Debug(1, "PPA.optionsPanel.okay() internal")
+    local changes = 0
+    changes = changes + PPA:SetSaved("lineLength", lineLengthSlider:GetValue())
+    changes = changes + PPA:SetSaved("numX", numXSlider:GetValue())
+    changes = changes + PPA:SetSaved("numY", numYSlider:GetValue())
+    if changes > 0 then
+      PPA:PrintDefault("PPA: % change(s) made to grid config", changes)
+      if PPA.gridShown then
+        PPA.grid = PPA:WipeFrame(PPA.grid)
+        PPA:ShowGrid()
+      end
+    end
     local sliderVal = debugLevel:GetValue()
     if sliderVal == 0 then
       sliderVal = nil
