@@ -13,6 +13,8 @@ globals = {
     "geterrorhandler",
     "C_Timer",
     "InterfaceOptions_AddCategory",
+    "GameTooltip",
+    "IsShiftKeyDown",
 }
 max_line_length = 132
 ignore = {

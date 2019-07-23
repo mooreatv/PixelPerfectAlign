@@ -21,7 +21,7 @@ local PPA = _G[addon]
 PPA.L = PPA:GetLocalization()
 local L = PPA.L
 
-PPA.showSplash = 3 -- how long to show splash at start
+PPA.showSplash = 0 -- how long to show splash at start
 PPA.startWithGridOn = false -- start with grid showing?
 PPA.lineLength = 16
 PPA.numX = 16 -- 0 is auto is 16 / aspect ratio
@@ -62,18 +62,68 @@ function PPA:ToggleGrid()
 end
 
 function PPA:ShowDisplayInfo(seconds)
-  local showAndHideGrid = not PPA.gridShown
-  if showAndHideGrid then
-    PPA:ShowGrid()
-  end
   PPA:WipeFrame(PPA.displayInfo)
-  PPA.displayInfo = PPA:DisplayInfo(-130, -210, 1.5)
+  PPA.displayInfo = PPA:DisplayInfo(-250, -300, 1.5)
   C_Timer.After(seconds, function()
-    if showAndHideGrid then
-      PPA:HideGrid()
-    end
     PPA.displayInfo:Hide()
   end)
+end
+
+function PPA:SetupMenu()
+  PPA:WipeFrame(PPA.mmb)
+  local b = PPA:minimapButton(PPA.buttonPos)
+  local icon = CreateFrame("Frame", nil, b)
+  icon:SetPoint("BOTTOMLEFT")
+  icon:SetFlattensRenderLayers(true)
+  icon:SetSize(48, 48)
+  -- Todo snap to our pixel perfect grid
+  local mid = 16
+  local off = 3.5
+  local len = 2
+  local width = 1.1
+  PPA:DrawCross(icon, mid - off, mid - off, len, 0, width, PPA.gold)
+  PPA:DrawCross(icon, mid - off, mid + off, len, 0, width, PPA.gold)
+  PPA:DrawCross(icon, mid + off, mid - off, len, 0, width, PPA.gold)
+  PPA:DrawCross(icon, mid + off, mid + off, len, 0, width, PPA.gold)
+  b:SetScript("OnClick", function(_w, button, _down)
+    if button == "RightButton" then
+      PPA.Slash("config")
+    else
+      if IsShiftKeyDown() then
+        PPA.Slash("info")
+      else
+        PPA.Slash("toggle")
+      end
+    end
+  end)
+  b.tooltipText = "|cFFF2D80CPixel Perfect Align|r:\n" ..
+                    L["|cFF99E5FFLeft|r click to toggle grid\n|cFF99E5FFShift left|r click for info display\n" ..
+                      "|cFF99E5FFRight|r click for options\n\nDrag to move this button."]
+  b:SetScript("OnEnter", function()
+    PPA:ShowToolTip(b, "ANCHOR_LEFT")
+  end)
+  b:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+    PPA:Debug("Hide tool tip...")
+  end)
+  b:SetMovable(true)
+  b:RegisterForDrag("LeftButton")
+  b:SetScript("OnDragStart", b.StartMoving)
+  b:SetScript("OnDragStop", function(w, ...)
+    b.StopMovingOrSizing(w, ...)
+    PPA:SavePosition(b)
+  end)
+  PPA.mmb = b
+  PPA.mmb.icon = icon
+end
+
+function PPA:SavePosition(f)
+  -- f:Snap()
+  local point, relTo, relativePoint, xOfs, yOfs = f:GetPoint() -- seems relativeTo is nil (!)
+  PPA:Debug("Stopped moving minimap button % % % % from frame %", point, relativePoint, xOfs, yOfs,
+            (relTo and (relTo:GetName() or "no name")))
+  local statusPos = {point, xOfs, yOfs} -- relativePoint seems to always be same as point
+  PPA:SetSaved("buttonPos", statusPos)
 end
 
 PPA.EventHdlrs = {
@@ -87,6 +137,7 @@ PPA.EventHdlrs = {
     if PPA.showSplash > 0 then
       PPA:ShowDisplayInfo(PPA.showSplash)
     end
+    PPA:SetupMenu()
   end,
 
   UPDATE_BINDINGS = function(_self, ...)
@@ -98,8 +149,8 @@ PPA.EventHdlrs = {
     PPA.grid = PPA:WipeFrame(PPA.grid)
     if PPA.gridShown then
       PPA:Debug("Grid is shown and we are resizing so re-drawing the grid")
-    -- TODO consider buffering as there is often 2+ events, or checking for actual change
-    PPA:ShowGrid()
+      -- TODO consider buffering as there is often 2+ events, or checking for actual change
+      PPA:ShowGrid()
     end
   end,
 
@@ -263,17 +314,13 @@ function PPA:CreateOptionsPanel()
   p:addText(L["These options let you control the behavior of PixelPerfectAlign"] .. " " .. PPA.manifestVersion ..
               " @project-abbreviated-hash@"):Place()
 
-  local startWithGrid = p:addCheckBox(L["Show Grid from start"], L["Whether we should start with the Grid shown"])
-                          :Place(4, 12)
-
-  local showSplash = p:addSlider(L["Show Info at login"],
-                                 L["How long if at all to show the grid and information at login"], 0, 9, 3, L["Off"],
-                                 L["9 seconds"], {[3] = "3 s", [6] = "6 s", [9] = "9 s"}):Place(8, 24)
-
   local lineLengthSlider = p:addSlider(L["Grid line length"], L["How many pixels for the lines/crosses drawn"], 1, 128,
                                        1):Place(8, 24)
 
-  -- seems we can't put more than ~16k textures in our frame so not more than 
+  local startWithGrid = p:addCheckBox(L["Show Grid from start"], L["Whether we should start with the Grid shown"])
+                          :Place(4, 12)
+
+  -- we can't put more than 16k textures at a time in our frame so limit the sliders accordingly
   local numXSlider = p:addSlider(L["Horizontal grid intervals"], L["How many intervals horizontally."], 2, 92, 1):Place(
                        8, 24)
 
@@ -289,7 +336,16 @@ function PPA:CreateOptionsPanel()
   p:addButton(L["Display Info"], L["Displays screen/resolution information for a few seconds"] ..
                 "\n|cFF99E5FF/ppa info|r " .. L["or Key Binding"], "info"):PlaceRight()
 
+  local showSplash = p:addSlider(L["Show Info at login"],
+                                 L["How long if at all to show the grid and information at login"], 0, 9, 3, L["Off"],
+                                 L["9 seconds"], {[3] = "3 s", [6] = "6 s", [9] = "9 s"}):Place(8, 24)
+
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 20)
+
+  p:addButton(L["Reset minimap button"], L["Resets the minimap button to back to initial default location"], function()
+    PPA:SetSaved("buttonPos", nil)
+    PPA:SetupMenu()
+  end):Place(4, 20)
 
   local debugLevel = p:addSlider(L["Debug level"], L["Sets the debug level"] .. "\n|cFF99E5FF/ppa debug X|r", 0, 9, 1,
                                  "Off"):Place(16, 30)
