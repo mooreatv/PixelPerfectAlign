@@ -38,7 +38,7 @@ function PPA:ShowGrid()
     if nY == 0 then
       nY = PPA:AspectRatio(nX)
     end
-    PPA.grid = PPA:FineGrid(nX, nY, PPA.lineLength)
+    PPA.grid = PPA:FineGrid(nX, nY, PPA.lineLength, "PPA_Grid", UIParent)
   end
   PPA.grid:Show()
   PPA.gridShown = true
@@ -72,19 +72,32 @@ end
 function PPA:SetupMenu()
   PPA:WipeFrame(PPA.mmb)
   local b = PPA:minimapButton(PPA.buttonPos)
+  local s, w, h = PPA:PixelPerfectSnap(b)
+  self:Debug("new w % h %", w, h)
   local icon = CreateFrame("Frame", nil, b)
-  icon:SetPoint("BOTTOMLEFT")
+  -- set scale to be pixels
+  icon:SetScale(s / icon:GetEffectiveScale())
+  PPA:Debug("Scale is now % es % ppf es %", icon:GetScale(), icon:GetEffectiveScale(), s)
+  local delta = math.floor((w - 32) / 2)
+  icon:SetPoint("BOTTOMLEFT", delta, delta)
   icon:SetFlattensRenderLayers(true)
   icon:SetSize(48, 48)
-  -- Todo snap to our pixel perfect grid
-  local mid = 16
-  local off = 3.5
-  local len = 2
-  local width = 1.1
-  PPA:DrawCross(icon, mid - off, mid - off, len, 0, width, PPA.gold)
-  PPA:DrawCross(icon, mid - off, mid + off, len, 0, width, PPA.gold)
-  PPA:DrawCross(icon, mid + off, mid - off, len, 0, width, PPA.gold)
-  PPA:DrawCross(icon, mid + off, mid + off, len, 0, width, PPA.gold)
+  icon:SetIgnoreParentAlpha(true)
+  -- based on 32x32
+  local start = 11.5
+  local off = 4
+  self:Debug("off is %", off)
+  if delta >= 1 then
+    off = off + PPA:round((w - 32) / 4)
+  end
+  local len = .75
+  local width = .75
+  local other = start + 2 * off
+  PPA:DrawCross(icon, start, start, len, 0, width, PPA.gold)
+  PPA:DrawCross(icon, start, other, len, 0, width, PPA.gold)
+  PPA:DrawCross(icon, start + off, start + off, len, 0, width, PPA.red) -- 1 red pixel
+  PPA:DrawCross(icon, other, start, len, 0, width, PPA.gold)
+  PPA:DrawCross(icon, other, other, len, 0, width, PPA.gold)
   b:SetScript("OnClick", function(_w, button, _down)
     if button == "RightButton" then
       PPA.Slash("config")
@@ -106,24 +119,13 @@ function PPA:SetupMenu()
     GameTooltip:Hide()
     PPA:Debug("Hide tool tip...")
   end)
-  b:SetMovable(true)
-  b:RegisterForDrag("LeftButton")
-  b:SetScript("OnDragStart", b.StartMoving)
-  b:SetScript("OnDragStop", function(w, ...)
-    b.StopMovingOrSizing(w, ...)
-    PPA:SavePosition(b)
-  end)
+  PPA:MakeMoveable(b, PPA.SavePositionCB)
   PPA.mmb = b
   PPA.mmb.icon = icon
 end
 
-function PPA:SavePosition(f)
-  -- f:Snap()
-  local point, relTo, relativePoint, xOfs, yOfs = f:GetPoint() -- seems relativeTo is nil (!)
-  PPA:Debug("Stopped moving minimap button % % % % from frame %", point, relativePoint, xOfs, yOfs,
-            (relTo and (relTo:GetName() or "no name")))
-  local statusPos = {point, xOfs, yOfs} -- relativePoint seems to always be same as point
-  PPA:SetSaved("buttonPos", statusPos)
+function PPA.SavePositionCB(_f, pos, _scale)
+  PPA:SetSaved("buttonPos", pos)
 end
 
 PPA.EventHdlrs = {
@@ -152,10 +154,16 @@ PPA.EventHdlrs = {
       -- TODO consider buffering as there is often 2+ events, or checking for actual change
       PPA:ShowGrid()
     end
+    if PPA.mmb then
+      PPA:SetupMenu() -- should be able to just RestorePosition() but...
+    end
   end,
 
   UI_SCALE_CHANGED = function(_self, ...)
     PPA:DebugEvCall(1, ...)
+    if PPA.mmb then
+      PPA:SetupMenu() -- buffer with the one above?
+    end
   end,
 
   ADDON_LOADED = function(_self, _event, name)
