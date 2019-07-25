@@ -15,6 +15,7 @@ globals = {
     "InterfaceOptions_AddCategory",
     "GameTooltip",
     "IsShiftKeyDown",
+    "UIParent",
 }
 max_line_length = 132
 ignore = {
