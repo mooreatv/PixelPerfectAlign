@@ -14,8 +14,10 @@ globals = {
     "C_Timer",
     "InterfaceOptions_AddCategory",
     "GameTooltip",
+    "IsControlKeyDown",
     "IsShiftKeyDown",
     "UIParent",
+    "GetCursorPosition",
 }
 max_line_length = 132
 ignore = {

@@ -6,10 +6,13 @@
    defaults don't work (https://github.com/Stanzilla/WoWUIBugs/issues/12) so removed them for now
 -->
 <Bindings>
-    <Binding name="PPA_TOGGLE" header="PPA">
+    <Binding name="PPA_TOGGLE" header="PPA" category="PIXELPERFECTALIGN">
         PixelPerfectAlign.Slash("toggle")
     </Binding>
-    <Binding name="PPA_INFO">
+    <Binding name="PPA_COORDS" category="PIXELPERFECTALIGN">
+        PixelPerfectAlign.Slash("coords")
+    </Binding>
+    <Binding name="PPA_INFO" category="PIXELPERFECTALIGN">
         PixelPerfectAlign.Slash("info")
     </Binding>
 </Bindings>
