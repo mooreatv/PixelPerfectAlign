@@ -10,6 +10,12 @@
    https://github.com/mooreatv/MoLib
 
    Please contact the author if you're interested in doing more/using it.
+
+   Get this addon binary release using curse/twitch client or on wowinterface
+   The source of the addon resides on https://github.com/mooreatv/PixelPerfectAlign
+   (and the MoLib library at https://github.com/mooreatv/MoLib)
+
+   Releases detail/changes are on https://github.com/mooreatv/PixelPerfectAlign/releases 
    ]] --
 --
 -- our name, our empty default (and unused) anonymous ns

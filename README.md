@@ -14,3 +14,10 @@ There is also an optional keybinding for toggling the grid on/off as well as the
 If you find a case where the crosses aren't showing evenly or not exactly 1 pixel; please take a screen shot and comment about your setup.
 
 Most of the heavy lifting code is in https://github.com/mooreatv/MoLib a reusable library
+
+Get the binary release using curse/twitch client or on wowinterface
+
+The source of the addon resides on https://github.com/mooreatv/PixelPerfectAlign
+(and the MoLib library at https://github.com/mooreatv/MoLib)
+
+Releases detail/changes are on https://github.com/mooreatv/PixelPerfectAlign/releases 
