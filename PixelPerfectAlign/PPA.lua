@@ -15,7 +15,7 @@
    The source of the addon resides on https://github.com/mooreatv/PixelPerfectAlign
    (and the MoLib library at https://github.com/mooreatv/MoLib)
 
-   Releases detail/changes are on https://github.com/mooreatv/PixelPerfectAlign/releases 
+   Releases detail/changes are on https://github.com/mooreatv/PixelPerfectAlign/releases
    ]] --
 --
 -- our name, our empty default (and unused) anonymous ns
@@ -370,7 +370,7 @@ function PPA.Slash(arg) -- can't be a : because used directly as slash command
     else
       PPA:SetSaved("debug", tonumber(rest))
     end
-    PPA:PrintDefault("DynBoxer debug now %", PPA.debug)
+    PPA:PrintDefault("PixelPerfectAlign debug now %", PPA.debug)
   else
     PPA:Help('unknown command "' .. arg .. '", usage:')
   end
