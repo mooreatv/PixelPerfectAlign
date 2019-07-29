@@ -78,7 +78,7 @@ end
 function PPA:SetupMenu()
   PPA:WipeFrame(PPA.mmb)
   local b = PPA:minimapButton(PPA.buttonPos)
-  local s, w, h = PPA:PixelPerfectSnap(b)
+  local _nw, _nh, s, w, h = PPA:PixelPerfectSnap(b)
   self:Debug("new w % h %", w, h)
   local icon = CreateFrame("Frame", nil, b)
   -- set scale to be pixels
