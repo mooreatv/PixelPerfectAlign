@@ -278,7 +278,7 @@ function PPA:Help(msg)
   PPA:PrintDefault("PixelPerfectAlign: " .. msg .. "\n" .. "/ppa show -- shows the grid\n" ..
                      "/ppa hide -- hides the grid\n" .. "/ppa toggle -- toggles show/hide\n" ..
                      "/ppa info -- displays info about screen and resolution for a few seconds\n" ..
-                     "/ppa config -- open addon config\n" ..
+                     "/ppa config -- open addon config\n" .. "/ppa bug -- report a bug\n" ..
                      "/ppa debug on/off/level -- for debugging on at level or off.\n" ..
                      "/ppa version -- shows addon version")
 end
@@ -315,6 +315,11 @@ function PPA.Slash(arg) -- can't be a : because used directly as slash command
     PPA:ShowGrid()
   elseif cmd == "h" then
     PPA:HideGrid()
+  elseif cmd == "b" then
+    local subText = L["Please submit on discord or on https://|cFF99E5FFbit.ly/ppabug|r or email"]
+    PPA:PrintDefault(L["PixelPerfectAddon bug report open: "] .. subText)
+    -- base molib will add version and date/timne
+    PPA:BugReport(subText, "@project-abbreviated-hash@\n\n" .. L["Bug report from slash command"])
   elseif cmd == "t" then
     PPA:ToggleGrid()
   elseif cmd == "i" then
@@ -435,6 +440,8 @@ function PPA:CreateOptionsPanel()
                                  L["9 seconds"], {[3] = "3 s", [6] = "6 s", [9] = "9 s"}):Place(8, 24)
 
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 20)
+
+  p:addButton("Bug Report", L["Get Information to submit a bug."] .. "\n|cFF99E5FF/ppa bug|r", "bug"):Place(4, 20)
 
   p:addButton(L["Reset minimap button"], L["Resets the minimap button to back to initial default location"], function()
     PPA:SetSaved("buttonPos", nil)
