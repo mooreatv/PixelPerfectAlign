@@ -119,7 +119,7 @@ function PPA:SetupMenu()
   end)
   b.tooltipText = "|cFFF2D80CPixel Perfect Align|r:\n" ..
                     L["|cFF99E5FFLeft|r click to toggle grid\n" .. "|cFF99E5FFShift|r click for info display\n" ..
-                      "|cFF99E5FFControl|r click for cursor coordinates\n" .. "|cFF99E5FFRight|r click for options\n\n" ..
+                      "|cFF99E5FFControl|r click for cursor coordinates\nand distance measurements\n" .. "|cFF99E5FFRight|r click for options\n\n" ..
                       "Drag to move this button."]
   b:SetScript("OnEnter", function()
     PPA:ShowToolTip(b, "ANCHOR_LEFT")
@@ -304,7 +304,7 @@ function PPA:ShowCoordinates()
       c.measureBox:SetPoint("TOPLEFT", nil, "BOTTOMLEFT", c.px, c.py)
       local w = math.abs(c.px - c.secondFrame.px)
       local h = math.abs(c.py - c.secondFrame.py)
-      c.measureBox.txt:SetText(string.format("%d x %d\nd %.2f", w, h, math.sqrt(w * w + h * h)))
+      c.measureBox.txt:SetText(string.format("%d x %d\nΔ %.1f", w, h, math.sqrt(w * w + h * h)))
     end
   end)
   f:Show()
@@ -588,8 +588,10 @@ function PPA:CreateOptionsPanel()
   p:addButton(L["Display Info"], L["Displays screen/resolution information for a few seconds"] ..
                 "\n|cFF99E5FF/ppa info|r " .. L["or Key Binding"], "info"):PlaceRight()
 
-  p:addButton(L["Toggle Coordinates"], L["Toggles the display of cursor pixel coordinates"] ..
-                "\n|cFF99E5FF/ppa coords|r " .. L["or Key Binding"], function()
+  p:addButton(L["Toggle Coordinates/Measurement mode"], L["Toggles the display of cursor pixel coordinates."] .. "\n" ..
+                L["In that mode click to start measuring between 2 points,"] .. "\n" ..
+                L["and right click to stop measuring"] .. "\n|cFF99E5FF/ppa coords|r " .. L["or Key Binding"],
+              function()
     PPA:ToggleCoordinates(0)
   end):PlaceRight()
 
