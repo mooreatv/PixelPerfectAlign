@@ -44,7 +44,7 @@ function PPA:ShowGrid()
     if nY == 0 then
       nY = PPA:AspectRatio(nX)
     end
-    PPA.grid = PPA:FineGrid(nX, nY, PPA.lineLength, "PPA_Grid", UIParent)
+    PPA.grid = PPA:FineGrid(nX, nY, PPA.lineLength, "PPA_Grid", WorldFrame)
   end
   PPA.grid:Show()
   PPA.gridShown = true
@@ -110,16 +110,17 @@ function PPA:SetupMenu()
     else
       if IsShiftKeyDown() then
         PPA.Slash("info")
+      elseif IsControlKeyDown() then
+        PPA:ToggleCoordinates(0)
       else
         PPA.Slash("toggle")
       end
     end
   end)
   b.tooltipText = "|cFFF2D80CPixel Perfect Align|r:\n" ..
-                    L["|cFF99E5FFLeft|r click to toggle grid\n|cFF99E5FFShift left|r click for info display\n" ..
-                      "|cFF99E5FFRight|r click for options\n\n" ..
-                      "Hold |cFF99E5FFControl|r starting from here,\nor |cFF99E5FF/ppa coords|r or the key binding,\n" ..
-                      "for cursor/screen coordinates\n\n" .. "Drag to move this button."]
+                    L["|cFF99E5FFLeft|r click to toggle grid\n" .. "|cFF99E5FFShift|r click for info display\n" ..
+                      "|cFF99E5FFControl|r click for cursor coordinates\n" .. "|cFF99E5FFRight|r click for options\n\n" ..
+                      "Drag to move this button."]
   b:SetScript("OnEnter", function()
     PPA:ShowToolTip(b, "ANCHOR_LEFT")
     PPA.inButton = true
@@ -138,63 +139,158 @@ function PPA.SavePositionCB(_f, pos, _scale)
   PPA:SetSaved("buttonPos", pos)
 end
 
-function PPA:ShowCoordinates(keep)
+function PPA:CoordCorner(f, cy, cx, padding) -- "BOTTOM" , "LEFT"
+  padding = padding or 4
+  local pt = cy .. cx
+  local opposite
+  local xsign
+  local ysign
+  if cy == "BOTTOM" then
+    ysign = 1
+    opposite = "TOP"
+  else
+    ysign = -1
+    opposite = "BOTTOM"
+  end
+  local offy = ysign * padding
+  if cx == "LEFT" then
+    xsign = 1
+    opposite = opposite .. "RIGHT"
+  else
+    xsign = -1
+    opposite = opposite .. "LEFT"
+  end
+  local offx = xsign * padding
+  local pad = 1 / 32
+  local len = 10 + pad
+  f.bottom:SetStartPoint(pt, xsign * (1 + pad), ysign * pad)
+  f.bottom:SetEndPoint(pt, xsign * len, ysign * pad)
+  f.right:SetStartPoint(pt, xsign * pad, ysign * (1 + pad))
+  f.right:SetEndPoint(pt, xsign * pad, ysign * len)
+  f.txt:SetJustifyV(cy)
+  f.txt:SetJustifyH(cx)
+  f.txt:ClearAllPoints()
+  f.txt:SetPoint(pt, offx, offy)
+  f.cx = cx
+  f.cy = cy
+  f.point = pt
+  f.opposite = opposite
+end
+
+function PPA:ShowCoordinates()
   if PPA.coordinateShown then
     return -- already shown, nothing to do
   end
+  if PPA.hideTimer then
+    PPA.hideTimer:Cancel()
+    PPA.hideTimer = nil
+  end
   PPA.coordinateShown = true
-  PPA.coordinateKeep = keep
   local f = PPA.coordinateFrame
-  local pad = 1 / 32
   if not f then
-    f = PPA:Frame()
+    f = PPA:Frame() -- WorldFrame()
     PPA.coordinateFrame = f
-    f:SetFrameStrata("FULLSCREEN")
+    f:SetFrameStrata("TOOLTIP")
     f:SetMovable(true)
+    f.bg = f:CreateTexture(nil, "BACKGROUND")
+    f.bg:SetAllPoints()
+    f.bg:SetColorTexture(0, 0, 0.2, .3)
     local r, g, b, alpha = 1, .8, .4, 0.95
-    f.txt = f:addText("Pixel XXXX , YYYY\nUI xxxx.xx , yyyy.yy", "NumberFont_Outline_Large")
-    f.txt:SetPoint("BOTTOMRIGHT", -4, 4)
-    f.txt:SetJustifyH("RIGHT")
-    f.txt:SetJustifyV("BOTTOM")
+    f.txt = f:addText("Coordinates", "NumberFont_Outline_Large")
     f.txt:SetTextColor(r, g, b, alpha)
     local thickness = 1
     local layer = "BACKGROUND"
-    local len = 10 + pad
-    f:SetSize(2 * len, 2 * len) -- just for having something to debug/see with dbg level 8
-    local bottom = f:addLine(thickness, r, g, b, alpha, layer, true)
-    bottom:SetStartPoint("BOTTOMRIGHT", -1 - pad, pad)
-    bottom:SetEndPoint("BOTTOMRIGHT", -len, pad)
-    local right = f:addLine(thickness, r, g, b, alpha, layer, true)
-    right:SetStartPoint("BOTTOMRIGHT", -pad, 1 + pad)
-    right:SetEndPoint("BOTTOMRIGHT", -pad, len)
+    -- f:SetSize(2 * len, 2 * len) -- initial size for placing the lines
+    f.bottom = f:addLine(thickness, r, g, b, alpha, layer, true)
+    f.right = f:addLine(thickness, r, g, b, alpha, layer, true)
   end
-  f:SetScript("OnUpdate", function(_w)
-    f.txt:SetText(string.format("Pixel %d , %d\nUI %.2f , %.2f", PPA:GetCursorCoordinates()))
+  f.debugCount = 4
+  f:SetScript("OnHide", function(w)
+    -- Switch to WorldFrame based pp so we stay visible
+    PPA:PrintDefault("PPA: Switching coordinates to be attached to WorldFrame")
+    w:SetParent(PPA:PixelPerfectFrame(true))
+    w.onWF = true
   end)
-  local uiScale, x, y = f:GetParent():GetEffectiveScale(), GetCursorPosition()
-  f:SetPoint("BOTTOMRIGHT", nil, "BOTTOMLEFT", x / uiScale, y / uiScale) -- opposite side of std cursor
+  f:SetScript("OnUpdate", function(c)
+    if c.onWF and UIParent:IsVisible() then
+      -- back to UIParent based pp base (so we're on top)
+      PPA:PrintDefault("PPA: Switching coordinates to be attached back to UIParent")
+      c.onWF = nil
+      c:SetParent(PPA:PixelPerfectFrame())
+      c:SetFrameStrata("TOOLTIP")
+    end
+    local px, py, ux, uy, rx, ry = PPA:GetCursorCoordinates()
+    if px == c.px and py == c.py then
+      return
+    end
+    c.px = px
+    c.py = py
+    c.txt:SetText(string.format("Raw %.2f , %.2f\nUI %.2f , %.2f\nPixel %d , %d", rx, ry, ux, uy, px, py))
+    local w, h = c:GetSize()
+    local sw = c.txt:GetStringWidth()
+    local sh = c.txt:GetStringHeight()
+    if c.debugCount > 0 then
+      PPA:Debug(8, "coordf is % x % - string is % x % - cursor is % , % - pts % / %", w, h, sw, sh, px, py, c.point,
+                c.opposite)
+      c.debugCount = c.debugCount - 1
+    end
+    c:SetSize(sw + 4, sh + 8)
+    c:ClearAllPoints()
+    local cx, cy
+    if px < sw then
+      cx = "LEFT"
+    else
+      cx = "RIGHT"
+    end
+    if (c:GetParent():GetHeight() - py) < sh then
+      cy = "TOP"
+    else
+      cy = "BOTTOM"
+    end
+    PPA:CoordCorner(c, cy, cx)
+    c:SetPoint(c.point, nil, "BOTTOMLEFT", px, py) -- opposite side of std cursor
+  end)
   f:Show()
-  f:StartMoving()
   PPA:Debug("Showing coordinates")
 end
 
-function PPA:HideCoordinates()
+function PPA:HideCoordinates(linger)
   if not PPA.coordinateShown then
     return -- already hidden, nothing to do
   end
-  PPA.coordinateFrame:StopMovingOrSizing()
   PPA.coordinateFrame:SetScript("OnUpdate", nil)
-  C_Timer.After(5, function()
-    PPA.coordinateShown = nil
+  PPA.coordinateShown = nil
+  local f = function()
+    PPA.coordinateFrame:SetScript("OnHide", nil)
     PPA.coordinateFrame:ClearAllPoints()
     PPA.coordinateFrame:Hide()
-  end)
+  end
+  if linger < 1 then
+    f()
+  else
+    if PPA.hideTimer then
+      PPA.hideTimer:Cancel()
+    end
+    PPA.hideTimer = C_Timer.NewTimer(linger, f)
+  end
   PPA:Debug("Hiding coordinates (in 4 sec)")
+end
+
+function PPA:ToggleCoordinates(linger)
+  linger = linger or 5
+  if PPA.coordinateShown then
+    PPA:PrintDefault("PixelPerfectAlign coordinates update OFF" ..
+                       (linger > 0 and ", keeping visible for a few seconds." or "."))
+    PPA:HideCoordinates(linger)
+  else
+    PPA:PrintDefault("PixelPerfectAlign coordinates ON.")
+    PPA:ShowCoordinates(true)
+  end
 end
 
 PPA.EventHdlrs = {
 
-  MODIFIER_STATE_CHANGED = function(_self, ...)
+  --[[   MODIFIER_STATE_CHANGED = function(_self, ...)
     PPA:DebugEvCall(1, ...)
     if IsControlKeyDown() then
       if PPA.inButton then
@@ -203,10 +299,11 @@ PPA.EventHdlrs = {
       end
     else
       if not PPA.coordinateKeep then
-        PPA:HideCoordinates()
+        PPA:HideCoordinates(5)
       end
     end
   end,
+ ]]
 
   PLAYER_ENTERING_WORLD = function(_self, ...)
     PPA:Debug("OnPlayerEnteringWorld " .. PPA:Dump(...))
@@ -278,8 +375,8 @@ function PPA:Help(msg)
   PPA:PrintDefault("PixelPerfectAlign: " .. msg .. "\n" .. "/ppa show -- shows the grid\n" ..
                      "/ppa hide -- hides the grid\n" .. "/ppa toggle -- toggles show/hide\n" ..
                      "/ppa info -- displays info about screen and resolution for a few seconds\n" ..
-                     "/ppa config -- open addon config\n" .. "/ppa bug -- report a bug\n" ..
-                     "/ppa debug on/off/level -- for debugging on at level or off.\n" ..
+                     "/ppa coord -- toggle pixel coordinates\n" .. "/ppa config -- open addon config\n" ..
+                     "/ppa bug -- report a bug\n" .. "/ppa debug on/off/level -- for debugging on at level or off.\n" ..
                      "/ppa version -- shows addon version")
 end
 
@@ -331,13 +428,7 @@ function PPA.Slash(arg) -- can't be a : because used directly as slash command
     PPA:PrintDefault("PixelPerfectAlign " .. PPA.manifestVersion ..
                        " (@project-abbreviated-hash@) by MooreaTv (moorea@ymail.com)")
   elseif PPA:StartsWith(arg, "coord") then
-    if PPA.coordinateShown then
-      PPA:PrintDefault("PixelPerfectAlign coordinates update OFF, keeping visible for a few seconds.")
-      PPA:HideCoordinates()
-    else
-      PPA:PrintDefault("PixelPerfectAlign coordinates ON.")
-      PPA:ShowCoordinates(true)
-    end
+    PPA:ToggleCoordinates()
   elseif cmd == "c" then
     -- Show config panel
     -- InterfaceOptionsList_DisplayPanel(PPA.optionsPanel)
@@ -434,6 +525,11 @@ function PPA:CreateOptionsPanel()
 
   p:addButton(L["Display Info"], L["Displays screen/resolution information for a few seconds"] ..
                 "\n|cFF99E5FF/ppa info|r " .. L["or Key Binding"], "info"):PlaceRight()
+
+  p:addButton(L["Toggle Coordinates"], L["Toggles the display of cursor pixel coordinates"] ..
+                "\n|cFF99E5FF/ppa coords|r " .. L["or Key Binding"], function()
+    PPA:ToggleCoordinates(0)
+  end):PlaceRight()
 
   local showSplash = p:addSlider(L["Show Info at login"],
                                  L["How long if at all to show the grid and information at login"], 0, 9, 3, L["Off"],
