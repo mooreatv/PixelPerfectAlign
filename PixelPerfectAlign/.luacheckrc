@@ -18,6 +18,7 @@ globals = {
     "IsShiftKeyDown",
     "UIParent",
     "GetCursorPosition",
+    "WorldFrame",
 }
 max_line_length = 132
 ignore = {
