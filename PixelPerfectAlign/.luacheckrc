@@ -19,6 +19,7 @@ globals = {
     "UIParent",
     "GetCursorPosition",
     "WorldFrame",
+    "IsMouseButtonDown",
 }
 max_line_length = 132
 ignore = {

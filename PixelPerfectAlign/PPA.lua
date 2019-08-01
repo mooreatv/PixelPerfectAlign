@@ -177,6 +177,84 @@ function PPA:CoordCorner(f, cy, cx, padding) -- "BOTTOM" , "LEFT"
   f.opposite = opposite
 end
 
+function PPA:CreateMeasureBox()
+  local f = PPA:Frame()
+  f:SetFrameStrata("TOOLTIP")
+  f:SetFrameLevel(8)
+  f.bg = f:CreateTexture(nil, "BACKGROUND")
+  f.bg:SetAllPoints()
+  f.bg:SetColorTexture(0, 0.2, 0, .3)
+  f.txt = f:addText("Dimensions", "NumberFont_Outline_Large")
+  f.txt:SetJustifyH("CENTER")
+  f.txt:SetPoint("CENTER")
+  f:Show()
+  return f
+end
+
+function PPA:CreateCoordFrame(...)
+  local f = PPA:Frame()
+  f:SetFrameStrata("TOOLTIP")
+  f.bg = f:CreateTexture(nil, "BACKGROUND")
+  f.bg:SetAllPoints()
+  f.bg:SetColorTexture(...)
+  local r, g, b, alpha = 1, .8, .4, 0.95
+  f.txt = f:addText("Coordinates", "NumberFont_Outline_Large")
+  f.txt:SetTextColor(r, g, b, alpha)
+  local thickness = 1
+  local layer = "BACKGROUND"
+  -- f:SetSize(2 * len, 2 * len) -- initial size for placing the lines
+  f.bottom = f:addLine(thickness, r, g, b, alpha, layer, true)
+  f.right = f:addLine(thickness, r, g, b, alpha, layer, true)
+  return f
+end
+
+function PPA:UpdateCoordFrame(c, reverse)
+  local px, py, ux, uy, rx, ry = PPA:GetCursorCoordinates()
+  if px == c.px and py == c.py then
+    return
+  end
+  c.px = px
+  c.py = py
+  c.txt:SetText(string.format("Raw %.2f , %.2f\nUI %.2f , %.2f\nPixel %d , %d", rx, ry, ux, uy, px, py))
+  local w, h = c:GetSize()
+  local sw = c.txt:GetStringWidth()
+  local sh = c.txt:GetStringHeight()
+  if c.debugCount and c.debugCount > 0 then
+    PPA:Debug(8, "coordf is % x % - string is % x % - cursor is % , % - pts % / %", w, h, sw, sh, px, py, c.point,
+              c.opposite)
+    c.debugCount = c.debugCount - 1
+  end
+  c:SetSize(sw + 4, sh + 8)
+  c:ClearAllPoints()
+  -- opposite side of std cursor most times except top and left
+  local cx, cy
+  if reverse then
+    if (c:GetParent():GetWidth() - px) < sw then
+      cx = "RIGHT"
+    else
+      cx = "LEFT"
+    end
+    if py > sh then
+      cy = "TOP"
+    else
+      cy = "BOTTOM"
+    end
+  else
+    if px < sw then
+      cx = "LEFT"
+    else
+      cx = "RIGHT"
+    end
+    if (c:GetParent():GetHeight() - py) < sh then
+      cy = "TOP"
+    else
+      cy = "BOTTOM"
+    end
+  end
+  PPA:CoordCorner(c, cy, cx)
+  c:SetPoint(c.point, nil, "BOTTOMLEFT", px + (cx == "LEFT" and 0 or 1), py - (cy == "BOTTOM" and 1 or 0))
+end
+
 function PPA:ShowCoordinates()
   if PPA.coordinateShown then
     return -- already shown, nothing to do
@@ -188,21 +266,9 @@ function PPA:ShowCoordinates()
   PPA.coordinateShown = true
   local f = PPA.coordinateFrame
   if not f then
-    f = PPA:Frame() -- WorldFrame()
+    f = PPA:CreateCoordFrame(0, 0, 0.2, .3)
     PPA.coordinateFrame = f
-    f:SetFrameStrata("TOOLTIP")
     f:SetMovable(true)
-    f.bg = f:CreateTexture(nil, "BACKGROUND")
-    f.bg:SetAllPoints()
-    f.bg:SetColorTexture(0, 0, 0.2, .3)
-    local r, g, b, alpha = 1, .8, .4, 0.95
-    f.txt = f:addText("Coordinates", "NumberFont_Outline_Large")
-    f.txt:SetTextColor(r, g, b, alpha)
-    local thickness = 1
-    local layer = "BACKGROUND"
-    -- f:SetSize(2 * len, 2 * len) -- initial size for placing the lines
-    f.bottom = f:addLine(thickness, r, g, b, alpha, layer, true)
-    f.right = f:addLine(thickness, r, g, b, alpha, layer, true)
   end
   f.debugCount = 4
   f:SetScript("OnHide", function(w)
@@ -219,36 +285,27 @@ function PPA:ShowCoordinates()
       c:SetParent(PPA:PixelPerfectFrame())
       c:SetFrameStrata("TOOLTIP")
     end
-    local px, py, ux, uy, rx, ry = PPA:GetCursorCoordinates()
-    if px == c.px and py == c.py then
-      return
+    PPA:UpdateCoordFrame(c)
+    if IsMouseButtonDown("RightButton") and c.secondFrame then
+      c.secondFrame:Hide()
+      c.measureBox:Hide()
     end
-    c.px = px
-    c.py = py
-    c.txt:SetText(string.format("Raw %.2f , %.2f\nUI %.2f , %.2f\nPixel %d , %d", rx, ry, ux, uy, px, py))
-    local w, h = c:GetSize()
-    local sw = c.txt:GetStringWidth()
-    local sh = c.txt:GetStringHeight()
-    if c.debugCount > 0 then
-      PPA:Debug(8, "coordf is % x % - string is % x % - cursor is % , % - pts % / %", w, h, sw, sh, px, py, c.point,
-                c.opposite)
-      c.debugCount = c.debugCount - 1
+    if IsMouseButtonDown("LeftButton") then
+      if not c.secondFrame then
+        c.secondFrame = PPA:CreateCoordFrame(0.2, 0, 0, .3)
+        c.measureBox = PPA:CreateMeasureBox(c, c.secondFrame)
+      end
+      PPA:UpdateCoordFrame(c.secondFrame, true) -- prefer the opposite edge
+      c.secondFrame:Show()
+      c.measureBox:Show()
     end
-    c:SetSize(sw + 4, sh + 8)
-    c:ClearAllPoints()
-    local cx, cy
-    if px < sw then
-      cx = "LEFT"
-    else
-      cx = "RIGHT"
+    if c.measureBox and c.measureBox:IsVisible() then
+      c.measureBox:SetPoint("BOTTOMRIGHT", nil, "BOTTOMLEFT", c.secondFrame.px, c.secondFrame.py)
+      c.measureBox:SetPoint("TOPLEFT", nil, "BOTTOMLEFT", c.px, c.py)
+      local w = math.abs(c.px - c.secondFrame.px)
+      local h = math.abs(c.py - c.secondFrame.py)
+      c.measureBox.txt:SetText(string.format("%d x %d\nd %.2f", w, h, math.sqrt(w * w + h * h)))
     end
-    if (c:GetParent():GetHeight() - py) < sh then
-      cy = "TOP"
-    else
-      cy = "BOTTOM"
-    end
-    PPA:CoordCorner(c, cy, cx)
-    c:SetPoint(c.point, nil, "BOTTOMLEFT", px, py) -- opposite side of std cursor
   end)
   f:Show()
   PPA:Debug("Showing coordinates")
@@ -258,20 +315,25 @@ function PPA:HideCoordinates(linger)
   if not PPA.coordinateShown then
     return -- already hidden, nothing to do
   end
-  PPA.coordinateFrame:SetScript("OnUpdate", nil)
   PPA.coordinateShown = nil
-  local f = function()
-    PPA.coordinateFrame:SetScript("OnHide", nil)
-    PPA.coordinateFrame:ClearAllPoints()
-    PPA.coordinateFrame:Hide()
+  local f = PPA.coordinateFrame
+  f:SetScript("OnUpdate", nil)
+  local fn = function()
+    f:SetScript("OnHide", nil)
+    f:ClearAllPoints()
+    f:Hide()
+    if f.secondFrame then
+      f.secondFrame:Hide()
+      f.measureBox:Hide()
+    end
   end
   if linger < 1 then
-    f()
+    fn()
   else
     if PPA.hideTimer then
       PPA.hideTimer:Cancel()
     end
-    PPA.hideTimer = C_Timer.NewTimer(linger, f)
+    PPA.hideTimer = C_Timer.NewTimer(linger, fn)
   end
   PPA:Debug("Hiding coordinates (in 4 sec)")
 end
