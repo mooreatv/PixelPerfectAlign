@@ -119,8 +119,8 @@ function PPA:SetupMenu()
   end)
   b.tooltipText = "|cFFF2D80CPixel Perfect Align|r:\n" ..
                     L["|cFF99E5FFLeft|r click to toggle grid\n" .. "|cFF99E5FFShift|r click for info display\n" ..
-                      "|cFF99E5FFControl|r click for cursor coordinates\nand distance measurements\n" .. "|cFF99E5FFRight|r click for options\n\n" ..
-                      "Drag to move this button."]
+                      "|cFF99E5FFControl|r click for cursor coordinates\nand distance measurements\n" ..
+                      "|cFF99E5FFRight|r click for options\n\n" .. "Drag to move this button."]
   b:SetScript("OnEnter", function()
     PPA:ShowToolTip(b, "ANCHOR_LEFT")
     PPA.inButton = true
@@ -178,7 +178,7 @@ function PPA:CoordCorner(f, cy, cx, padding) -- "BOTTOM" , "LEFT"
 end
 
 function PPA:CreateMeasureBox()
-  local f = PPA:Frame()
+  local f = PPA:Frame(nil, nil, nil, PPA.coordParentFrame)
   f:SetFrameStrata("TOOLTIP")
   f:SetFrameLevel(8)
   f.bg = f:CreateTexture(nil, "BACKGROUND")
@@ -192,7 +192,22 @@ function PPA:CreateMeasureBox()
 end
 
 function PPA:CreateCoordFrame(...)
-  local f = PPA:Frame()
+  -- create parent frame for all 3 frames that handles the always visible part for all at once
+  if not PPA.coordParentFrame then
+    local pf = PPA:Frame()
+    PPA.coordParentFrame = pf
+    pf:SetAllPoints()
+    pf:SetScript("OnHide", function(w)
+      if not PPA.coordinateShown then
+        return
+      end
+      -- Switch to WorldFrame based pp so we stay visible
+      PPA:PrintDefault("PPA: Switching coordinates to be attached to WorldFrame")
+      w:SetParent(PPA:PixelPerfectFrame(true))
+      w.onWF = true
+    end)
+  end
+  local f = PPA:Frame(nil, nil, nil, PPA.coordParentFrame)
   f:SetFrameStrata("TOOLTIP")
   f.bg = f:CreateTexture(nil, "BACKGROUND")
   f.bg:SetAllPoints()
@@ -271,19 +286,14 @@ function PPA:ShowCoordinates()
     f:SetMovable(true)
   end
   f.debugCount = 4
-  f:SetScript("OnHide", function(w)
-    -- Switch to WorldFrame based pp so we stay visible
-    PPA:PrintDefault("PPA: Switching coordinates to be attached to WorldFrame")
-    w:SetParent(PPA:PixelPerfectFrame(true))
-    w.onWF = true
-  end)
   f:SetScript("OnUpdate", function(c)
-    if c.onWF and UIParent:IsVisible() then
-      -- back to UIParent based pp base (so we're on top)
+    local pf = c:GetParent()
+    if pf.onWF and UIParent:IsVisible() then
+      -- back to UIParent based pp base (so we and other coord windows are on top)
       PPA:PrintDefault("PPA: Switching coordinates to be attached back to UIParent")
-      c.onWF = nil
-      c:SetParent(PPA:PixelPerfectFrame())
-      c:SetFrameStrata("TOOLTIP")
+      pf.onWF = nil
+      pf:SetParent(PPA:PixelPerfectFrame())
+      pf:SetFrameStrata("TOOLTIP")
     end
     PPA:UpdateCoordFrame(c)
     if IsMouseButtonDown("RightButton") and c.secondFrame then
@@ -319,7 +329,6 @@ function PPA:HideCoordinates(linger)
   local f = PPA.coordinateFrame
   f:SetScript("OnUpdate", nil)
   local fn = function()
-    f:SetScript("OnHide", nil)
     f:ClearAllPoints()
     f:Hide()
     if f.secondFrame then
@@ -346,7 +355,7 @@ function PPA:ToggleCoordinates(linger)
     PPA:HideCoordinates(linger)
   else
     PPA:PrintDefault("PixelPerfectAlign coordinates ON.")
-    PPA:ShowCoordinates(true)
+    PPA:ShowCoordinates()
   end
 end
 
@@ -588,7 +597,8 @@ function PPA:CreateOptionsPanel()
   p:addButton(L["Display Info"], L["Displays screen/resolution information for a few seconds"] ..
                 "\n|cFF99E5FF/ppa info|r " .. L["or Key Binding"], "info"):PlaceRight()
 
-  p:addButton(L["Toggle Coordinates/Measurement mode"], L["Toggles the display of cursor pixel coordinates."] .. "\n" ..
+  p:addButton(L["Toggle Coordinates/Measurement mode"],
+              L["Toggles the display of cursor pixel coordinates."] .. "\n" ..
                 L["In that mode click to start measuring between 2 points,"] .. "\n" ..
                 L["and right click to stop measuring"] .. "\n|cFF99E5FF/ppa coords|r " .. L["or Key Binding"],
               function()
