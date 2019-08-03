@@ -44,7 +44,7 @@ function PPA:ShowGrid()
     if nY == 0 then
       nY = PPA:AspectRatio(nX)
     end
-    PPA.grid = PPA:FineGrid(nX, nY, PPA.lineLength, "PPA_Grid", WorldFrame)
+    PPA.grid = PPA:FineGrid(nX, nY, PPA.lineLength, "PPA_Grid")
   end
   PPA.grid:Show()
   PPA.gridShown = true
@@ -225,6 +225,17 @@ function PPA:CreateCoordFrame(...)
     local fn = function()
       PPA.tape.inside = true
     end
+    PPA.tape.editBox:SetScript("OnSizeChanged", function(w, _, nh)
+      if w:HasFocus() then
+        return
+      end
+      local sh = w:GetParent():GetHeight()
+      if nh > sh then
+        -- despite what the wiki used to say, this is actually required to make it work
+        PPA.tape.seb:UpdateScrollChildRect()
+        PPA.tape.seb:SetVerticalScroll(nh - sh)
+      end
+    end)
     PPA.tape:SetScript("OnEnter", fn)
     -- somehow the containing frame is left to enter these - TODO find something less ugly than explictly coding 5 extra frames
     PPA.tape.editBox:SetScript("OnEnter", fn)
@@ -330,13 +341,6 @@ function PPA:ShowCoordinates()
     end
     if PPA.tape.inside then
       return
-    end
-    if PPA.tape:IsVisible() and not PPA.tape.editBox:HasFocus() then
-      local sh = PPA.tape.seb:GetHeight()
-      local eh = PPA.tape.editBox:GetHeight()
-      if eh > sh then
-        PPA.tape.seb:SetVerticalScroll(eh - sh)
-      end
     end
     PPA:UpdateCoordFrame(c)
     if IsMouseButtonDown("RightButton") and c.secondFrame then
