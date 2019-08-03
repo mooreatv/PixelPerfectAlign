@@ -206,6 +206,38 @@ function PPA:CreateCoordFrame(...)
       w:SetParent(PPA:PixelPerfectFrame(true))
       w.onWF = true
     end)
+    PPA.tape = PPA:StandardFrame("PPAtape", L["Pixel Perfect Align tape"], pf)
+    PPA.tape:addText(L["|cFF99E5FFLeft click|r to set one point, left click again to record dimensions here\n" ..
+                       "and set a new point. Right click to erase current point."]):Place(4)
+    local font = PPA:NormalizeFont("ChatFontNormal")
+    local _, h = font:GetFont()
+    PPA.tape.defaultTextColor = {0.1, .9, .1, 1}
+    PPA.tape.seb = PPA.tape:addScrollEditFrame(400, h * 16, font) -- 12 lines
+    PPA.tape.lineHeight = h * 3
+    PPA.tape.seb:Place(5, 14) -- 4 is inset
+    PPA.tape.editBox = PPA.tape.seb.editBox
+    PPA.tape.editBox:SetAutoFocus(false)
+    local fnOutside = function()
+      PPA.tape.inside = nil
+    end
+    PPA.tape:SetScript("OnLeave", fnOutside)
+    PPA.tape:SetScript("OnHide", fnOutside)
+    local fn = function()
+      PPA.tape.inside = true
+    end
+    PPA.tape:SetScript("OnEnter", fn)
+    -- somehow the containing frame is left to enter these - TODO find something less ugly than explictly coding 5 extra frames
+    PPA.tape.editBox:SetScript("OnEnter", fn)
+    PPA.tape.seb.ScrollBar:SetScript("OnEnter", fn)
+    PPA.tape.seb.ScrollBar.ScrollDownButton:SetScript("OnEnter", fn)
+    PPA.tape.seb.ScrollBar.ScrollUpButton:SetScript("OnEnter", fn)
+    PPA.tape.CloseButton:SetScript("OnEnter", fn)
+    --[[     PPA.tape.editBox:SetScript("OnCursorChanged", function(w, _x, _y, _u, lh)
+      local sf = w:GetParent()
+      sf:SetVerticalScroll(w:GetHeight() - sf:GetHeight() + 2 * lh)
+    end)
+ ]]
+    PPA.tape:Snap()
   end
   local f = PPA:Frame(nil, nil, nil, PPA.coordParentFrame)
   f:SetFrameStrata("TOOLTIP")
@@ -226,7 +258,7 @@ end
 function PPA:UpdateCoordFrame(c, reverse)
   local px, py, ux, uy, rx, ry = PPA:GetCursorCoordinates()
   if px == c.px and py == c.py then
-    return
+    return false
   end
   c.px = px
   c.py = py
@@ -268,6 +300,7 @@ function PPA:UpdateCoordFrame(c, reverse)
   end
   PPA:CoordCorner(c, cy, cx)
   c:SetPoint(c.point, nil, "BOTTOMLEFT", px + (cx == "LEFT" and 0 or 1), py - (cy == "BOTTOM" and 1 or 0))
+  return true
 end
 
 function PPA:ShowCoordinates()
@@ -283,8 +316,8 @@ function PPA:ShowCoordinates()
   if not f then
     f = PPA:CreateCoordFrame(0, 0, 0.2, .3)
     PPA.coordinateFrame = f
-    f:SetMovable(true)
   end
+  PPA.tape:Show()
   f.debugCount = 4
   f:SetScript("OnUpdate", function(c)
     local pf = c:GetParent()
@@ -295,15 +328,33 @@ function PPA:ShowCoordinates()
       pf:SetParent(PPA:PixelPerfectFrame())
       pf:SetFrameStrata("TOOLTIP")
     end
+    if PPA.tape.inside then
+      return
+    end
+    if PPA.tape:IsVisible() and not PPA.tape.editBox:HasFocus() then
+      local sh = PPA.tape.seb:GetHeight()
+      local eh = PPA.tape.editBox:GetHeight()
+      if eh > sh then
+        PPA.tape.seb:SetVerticalScroll(eh - sh)
+      end
+    end
     PPA:UpdateCoordFrame(c)
     if IsMouseButtonDown("RightButton") and c.secondFrame then
       c.secondFrame:Hide()
       c.measureBox:Hide()
+      return
     end
     if IsMouseButtonDown("LeftButton") then
       if not c.secondFrame then
         c.secondFrame = PPA:CreateCoordFrame(0.2, 0, 0, .3)
         c.measureBox = PPA:CreateMeasureBox(c, c.secondFrame)
+      elseif c.measureBox.w ~= 0 and c.measureBox.h ~= 0 then
+        PPA.tape.editBox:HighlightText(0, 0)
+        PPA.tape.editBox:SetCursorPosition(#PPA.tape.editBox:GetText())
+        PPA.tape.editBox:Insert("|cFFE04010A:|r " .. c.secondFrame.txt:GetText():gsub("\n", "; ") .. "\n")
+        PPA.tape.editBox:Insert("|cFF3030FFB:|r " .. c.txt:GetText():gsub("\n", "; ") .. "\n")
+        PPA.tape.editBox:Insert("|cFFFFFF00->|r |cFFF0F0F0" .. c.measureBox.txt:GetText():gsub("\n", "; ") .. "|r\n\n")
+        PPA.tape.editBox:SetCursorPosition(#PPA.tape.editBox:GetText())
       end
       PPA:UpdateCoordFrame(c.secondFrame, true) -- prefer the opposite edge
       c.secondFrame:Show()
@@ -314,6 +365,8 @@ function PPA:ShowCoordinates()
       c.measureBox:SetPoint("TOPLEFT", nil, "BOTTOMLEFT", c.px, c.py)
       local w = math.abs(c.px - c.secondFrame.px)
       local h = math.abs(c.py - c.secondFrame.py)
+      c.measureBox.w = w
+      c.measureBox.h = h
       c.measureBox.txt:SetText(string.format("%d x %d\nΔ %.1f", w, h, math.sqrt(w * w + h * h)))
     end
   end)
