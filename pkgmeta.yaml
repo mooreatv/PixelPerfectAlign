@@ -2,7 +2,7 @@ package-as: PixelPerfectAlign
 
 ignore:
     - installppa.bat
-    - PixelPerfectAlign/luaformat.cfg
+    - luaformat.cfg
     - MoLib/installmolib.bat
     - MoLib/MoLib.toc
     - MoLib/luaformat.cfg
