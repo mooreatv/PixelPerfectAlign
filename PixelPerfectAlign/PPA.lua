@@ -487,17 +487,9 @@ PPA.EventHdlrs = {
     pixelPerfectAlignSaved.addonHash = "@project-abbreviated-hash@"
     PPA:deepmerge(PPA, nil, pixelPerfectAlignSaved)
     PPA:Debug(3, "Merged in saved variables.")
+    PPA.savedVar = pixelPerfectAlignSaved -- by ref, for SetSaved,...
   end
 }
-
-function PPA:OnEvent(event, first, ...)
-  PPA:Debug(8, "OnEvent called for % e=% %", self:GetName(), event, first)
-  local handler = PPA.EventHdlrs[event]
-  if handler then
-    return handler(self, event, first, ...)
-  end
-  PPA:Error("Unexpected event without handler %", event)
-end
 
 function PPA:Help(msg)
   PPA:PrintDefault("PixelPerfectAlign: " .. msg .. "\n" .. "/ppa show -- shows the grid\n" ..
@@ -506,21 +498,6 @@ function PPA:Help(msg)
                      "/ppa coord -- toggle pixel coordinates\n" .. "/ppa config -- open addon config\n" ..
                      "/ppa bug -- report a bug\n" .. "/ppa debug on/off/level -- for debugging on at level or off.\n" ..
                      "/ppa version -- shows addon version")
-end
-
--- returns 1 if changed, 0 if same as live value
--- number instead of boolean so we can add them in handleOk
--- (saved var isn't checked/always set)
-function PPA:SetSaved(name, value)
-  local changed = (value ~= self[name])
-  self[name] = value
-  pixelPerfectAlignSaved[name] = value
-  PPA:Debug(8, "(Saved) Setting % set to % - pixelPerfectAlignSaved=%", name, value, pixelPerfectAlignSaved)
-  if changed then
-    return 1
-  else
-    return 0
-  end
 end
 
 function PPA.Slash(arg) -- can't be a : because used directly as slash command
@@ -610,12 +587,7 @@ SLASH_PixelPerfectAlign_Slash_Command1 = "/ppa"
 SLASH_PixelPerfectAlign_Slash_Command2 = "/align"
 
 -- Events handling
-PPA.frame = CreateFrame("Frame")
-
-PPA.frame:SetScript("OnEvent", PPA.OnEvent)
-for k, _ in pairs(PPA.EventHdlrs) do
-  PPA.frame:RegisterEvent(k)
-end
+PPA:RegisterEventHandlers()
 
 -- Options panel
 
