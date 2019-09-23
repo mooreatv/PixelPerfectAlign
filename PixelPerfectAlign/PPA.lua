@@ -3,7 +3,7 @@
    Licensed under LGPLv3 - No Warranty
    (contact the author if you need a different license)
 
-   Demonstrates pixel perfect handling from MoLib
+   Demonstrates pixel perfect handling from MoLib.
 
    Feel free to embed/use MoLib according to the license but not
    just copy paste what you want from it into your addon.
