@@ -28,3 +28,5 @@ The source of the addon resides on https://github.com/mooreatv/PixelPerfectAlign
 Releases detail/changes are on https://github.com/mooreatv/PixelPerfectAlign/releases
 
 Screenshots etc on https://www.curseforge.com/wow/addons/pixel-perfect-align/screenshots
+
+Works on both Classic and Shadowlands
