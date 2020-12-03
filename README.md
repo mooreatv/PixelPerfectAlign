@@ -21,7 +21,7 @@ Most of the heavy lifting code is in https://github.com/mooreatv/MoLib a reusabl
 
 MoLib can be used, like this addon, to draw on screen pixel perfect lines of exactly 1 pixel width/height or or UI elements like Blizzard textures without glitches when moved/placed.
 
-Get the binary release using curse/twitch client or on wowinterface
+Get the binary release using curse client or compatible addon manager or on wowinterface or on github
 
 The source of the addon resides on https://github.com/mooreatv/PixelPerfectAlign
 
