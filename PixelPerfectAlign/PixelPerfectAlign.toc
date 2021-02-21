@@ -12,6 +12,7 @@
 ## LoadOnDemand: 0
 ## SavedVariables: pixelPerfectAlignSaved
 ## Globe: check-classic
+## OptionalDeps: SexyMap, ProjectAzilroka
 ## X-OpenSource-License: LPGLv3
 ## X-OpenSource-Releases: https://github.com/mooreatv/PixelPerfectAlign/releases
 ## X-Curse-Project-ID: 331518

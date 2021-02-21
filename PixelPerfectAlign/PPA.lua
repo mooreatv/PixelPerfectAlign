@@ -32,6 +32,7 @@ PPA.startWithGridOn = false -- start with grid showing?
 PPA.lineLength = 16
 PPA.numX = 16 -- 0 is auto is 16 / aspect ratio
 PPA.numY = 0 -- 0 is auto / aspect ratio
+PPA.showMinimapIcon = true
 
 -- PPA.debug = 9 -- to debug before saved variables are loaded
 
@@ -77,10 +78,18 @@ end
 
 function PPA:SetupMenu()
   PPA:WipeFrame(PPA.mmb)
+  if not PPA.showMinimapIcon then
+    PPA:Debug("Not showing minimap icon per config")
+    return
+  end
   local b = PPA:minimapButton(PPA.buttonPos)
   local _nw, _nh, s, w, h = PPA:PixelPerfectSnap(b)
   self:Debug("new w % h %", w, h)
+  if b.icon then
+    PPA:WipeFrame(b.icon)
+  end
   local icon = CreateFrame("Frame", nil, b)
+  b.icon = icon
   -- set scale to be pixels
   icon:SetScale(s / icon:GetEffectiveScale())
   PPA:Debug("Scale is now % es % ppf es %", icon:GetScale(), icon:GetEffectiveScale(), s)
@@ -638,6 +647,10 @@ function PPA:CreateOptionsPanel()
                                  L["How long if at all to show the grid and information at login"], 0, 9, 3, L["Off"],
                                  L["9 seconds"], {[3] = "3 s", [6] = "6 s", [9] = "9 s"}):Place(8, 24)
 
+
+  local showMinimapIcon = p:addCheckBox("Show minimap icon",
+    "Show/Hide the minimap button"):Place(4,20)
+
   p:addText(L["Development, troubleshooting and advanced options:"]):Place(40, 20)
 
   p:addButton("Bug Report", L["Get Information to submit a bug."] .. "\n|cFF99E5FF/ppa bug|r", "bug"):Place(4, 20)
@@ -680,6 +693,7 @@ function PPA:CreateOptionsPanel()
     lineLengthSlider:SetValue(PPA.lineLength)
     numXSlider:SetValue(PPA.numX)
     numYSlider:SetValue(PPA.numY)
+    showMinimapIcon:SetChecked(PPA.showMinimapIcon)
     p.oldStart = PPA.startWithGridOn
   end
 
@@ -710,6 +724,9 @@ function PPA:CreateOptionsPanel()
     PPA:SetSaved("debug", sliderVal)
     PPA:SetSaved("showSplash", showSplash:GetValue())
     PPA:SetSaved("startWithGridOn", startWithGrid:GetChecked())
+    if PPA:SetSaved("showMinimapIcon", showMinimapIcon:GetChecked()) then
+      PPA:SetupMenu()
+    end
     if p.oldStart ~= PPA.startWithGridOn then
       PPA:PrintDefault("PPA: Changed start with grid to " .. (PPA.startWithGridOn and "ON" or "OFF"))
       if PPA.startWithGridOn then
