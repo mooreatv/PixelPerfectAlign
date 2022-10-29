@@ -544,10 +544,7 @@ function PPA.Slash(arg) -- can't be a : because used directly as slash command
   elseif PPA:StartsWith(arg, "coord") then
     PPA:ToggleCoordinates()
   elseif cmd == "c" then
-    -- Show config panel
-    -- InterfaceOptionsList_DisplayPanel(PPA.optionsPanel)
-    InterfaceOptionsFrame:Show() -- onshow will clear the category if not already displayed
-    InterfaceOptionsFrame_OpenToCategory(PPA.optionsPanel) -- gets our name selected
+    PPA:ShowConfigPanel(PPA.optionsPanel)
   elseif cmd == "e" then
     -- copied from PixelPerfectAlign, as augment on event trace
     UIParentLoadAddOn("Blizzard_DebugTools")
