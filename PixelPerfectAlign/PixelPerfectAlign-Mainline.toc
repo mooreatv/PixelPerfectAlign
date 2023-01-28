@@ -1,4 +1,4 @@
-## Interface: 100002
+## Interface: 100005
 ## Title: Pixel Perfect Align
 ## Notes: Pixel Perfect Alignment Grid and Measuring Tape using MoLib (|cFF99E5FF/ppa|r)
 ## Notes: Dragonflight edition
