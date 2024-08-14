@@ -751,7 +751,7 @@ function PPA:CreateOptionsPanel()
     end
   end
   -- Add the panel to the Interface Options
-  InterfaceOptions_AddCategory(PPA.optionsPanel)
+  PPA:ConfigPanel(PPA.optionsPanel)
 end
 
 -- bindings / localization

@@ -1,7 +1,5 @@
 globals = {
     "pixelPerfectAlignSaved",
-    "InterfaceOptionsFrame",
-    "InterfaceOptionsFrame_OpenToCategory",
     "UIParentLoadAddOn",
     "EventTraceFrame",
     "EventTraceFrame_OnShow",
@@ -12,7 +10,6 @@ globals = {
     "CreateFrame",
     "geterrorhandler",
     "C_Timer",
-    "InterfaceOptions_AddCategory",
     "GameTooltip",
     "IsControlKeyDown",
     "IsShiftKeyDown",
