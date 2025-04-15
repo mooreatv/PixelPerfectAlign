@@ -1,7 +1,7 @@
-## Interface: 30403
+## Interface: 40402
 ## Title: Pixel Perfect Align
 ## Notes: Pixel Perfect Alignment Grid and Measuring Tape using MoLib (|cFF99E5FF/ppa|r)
-## Notes: Wrath of the Lich King Classic Edition
+## Notes: Cataclysm edition
 ## Author: MooreaTV moorea@ymail.com
 ## Version: @project-version@
 ## DefaultState: Enabled

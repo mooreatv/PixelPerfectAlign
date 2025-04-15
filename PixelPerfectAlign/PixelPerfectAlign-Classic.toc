@@ -1,4 +1,4 @@
-## Interface: 11506
+## Interface: 11507
 ## Title: Pixel Perfect Align
 ## Notes: Pixel Perfect Alignment Grid and Measuring Tape using MoLib (|cFF99E5FF/ppa|r)
 ## Notes: Classic (Era and SoM) edition
